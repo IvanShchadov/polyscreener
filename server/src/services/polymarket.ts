@@ -2,18 +2,29 @@ import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import type { MarketSnapshot, GammaMarket } from '../types/index.js';
 
-function parseJsonArray(raw: string): string[] {
+function parseJsonArray(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(String);
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(String(raw));
+    return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch {
     return [];
   }
 }
 
-function parseOutcomePrices(raw: string): [number, number] {
+function parseOutcomePrices(raw: unknown): [number, number] {
+  if (!raw) return [0, 0];
   try {
-    const arr: string[] = JSON.parse(raw);
-    return [parseFloat(arr[0]) || 0, parseFloat(arr[1]) || 0];
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(arr) && arr.length >= 2) {
+      return [parseFloat(arr[0]) || 0, parseFloat(arr[1]) || 0];
+    }
+    if (Array.isArray(arr) && arr.length === 1) {
+      const yes = parseFloat(arr[0]) || 0;
+      return [yes, yes > 0 ? 1 - yes : 0];
+    }
+    return [0, 0];
   } catch {
     return [0, 0];
   }

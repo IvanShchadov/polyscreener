@@ -80,12 +80,12 @@ export interface GammaMarket {
   volume_num: number;
   liquidity: string;
   liquidity_num: number;
-  outcome_prices: string;
-  clob_token_ids: string;
+  outcome_prices: string | string[];
+  clob_token_ids: string | string[];
   spread: number;
   best_bid: number;
   best_ask: number;
-  tags: { label: string }[];
+  tags: { label: string }[] | string[];
   active: boolean;
   closed: boolean;
   archived: boolean;
