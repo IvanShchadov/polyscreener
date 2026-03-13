@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { RefreshCw, TrendingUp } from 'lucide-react';
 import { fetchAnomalies } from '../lib/api';
 import { TradeButton } from '../components/TradeButton';
@@ -28,9 +28,10 @@ export function ArbitragePage() {
   const [opportunities, setOpportunities] = useState<Anomaly[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async function refresh() {
     setLoading(true);
     try {
       const all = await fetchAnomalies({ type: 'CROSS_PLATFORM_ARB', limit: 100 });
@@ -47,15 +48,18 @@ export function ArbitragePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     refresh();
     intervalRef.current = setInterval(refresh, 30_000);
+    // Tick every 5s to update the "Updated X ago" label
+    const tickId = setInterval(() => setTick((t) => t + 1), 5_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      clearInterval(tickId);
     };
-  }, []);
+  }, [refresh]);
 
   return (
     <div className="space-y-5">

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnomalyFeed } from '../components/AnomalyFeed';
 import { Sidebar } from '../components/Sidebar';
 import type { Anomaly, AnomalyStats, MarketSnapshot, ScannerStatus, Severity } from '../types';
@@ -36,11 +36,14 @@ interface NotificationState {
 }
 
 export function DashboardPage({ anomalies, isConnected, stats, scanner, markets }: DashboardPageProps) {
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
 
-  // Notification state stored in a ref to avoid re-renders
+  // Notification state stored in a ref to avoid re-renders on each anomaly update
   const notifStateRef = useRef<NotificationState>({
     enabled: false,
-    permission: 'default',
+    permission: notifPermission,
     minSeverity: 'HIGH',
   });
   const prevAnomalyCountRef = useRef(0);
@@ -77,6 +80,7 @@ export function DashboardPage({ anomalies, isConnected, stats, scanner, markets 
     const perm = await Notification.requestPermission();
     notifStateRef.current.permission = perm;
     if (perm === 'granted') notifStateRef.current.enabled = true;
+    setNotifPermission(perm);
   }
 
   return (
@@ -87,6 +91,7 @@ export function DashboardPage({ anomalies, isConnected, stats, scanner, markets 
         scanner={scanner}
         markets={markets}
         recentAnomalies={anomalies.slice(0, 5)}
+        notifPermission={notifPermission}
         onRequestNotifications={requestNotifications}
       />
     </div>

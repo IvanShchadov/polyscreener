@@ -8,6 +8,7 @@ interface SidebarProps {
   scanner: ScannerStatus | null;
   markets: MarketSnapshot[];
   recentAnomalies?: Anomaly[];
+  notifPermission?: NotificationPermission;
   onRequestNotifications?: () => void;
 }
 
@@ -70,9 +71,9 @@ function SettingsGroup({ rows }: { rows: { label: string; value: string | number
   );
 }
 
-export function Sidebar({ stats, scanner, markets, recentAnomalies = [], onRequestNotifications }: SidebarProps) {
+export function Sidebar({ stats, scanner, markets, recentAnomalies = [], notifPermission, onRequestNotifications }: SidebarProps) {
   const notifSupported = 'Notification' in window;
-  const notifGranted = notifSupported && Notification.permission === 'granted';
+  const notifGranted = notifPermission === 'granted';
 
   return (
     <aside className="space-y-6 overflow-y-auto">
