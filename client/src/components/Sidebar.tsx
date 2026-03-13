@@ -1,4 +1,5 @@
-import type { AnomalyStats, ScannerStatus, MarketSnapshot } from '../types';
+import { Bell } from 'lucide-react';
+import type { AnomalyStats, ScannerStatus, MarketSnapshot, Anomaly } from '../types';
 import { StatCard } from './StatCard';
 import { DistroBar } from './DistroBar';
 import { TopMarkets } from './TopMarkets';
@@ -7,6 +8,8 @@ interface SidebarProps {
   stats: AnomalyStats | null;
   scanner: ScannerStatus | null;
   markets: MarketSnapshot[];
+  recentAnomalies?: Anomaly[];
+  onRequestNotifications?: () => void;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -34,11 +37,27 @@ const SEVERITY_COLORS: Record<string, string> = {
   LOW:      '#5ac8fa',
 };
 
+const TYPE_ICONS: Record<string, string> = {
+  PRICE_SPIKE:        '📈',
+  VOLUME_SURGE:       '📊',
+  SPREAD_ANOMALY:     '↔️',
+  WHALE_TRADE:        '🐋',
+  CROSS_PLATFORM_ARB: '⚡',
+  NEW_MARKET_HOT:     '🔥',
+};
+
 function formatUptime(ms: number): string {
   const hours = Math.floor(ms / 3_600_000);
   const mins = Math.floor((ms % 3_600_000) / 60_000);
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
+}
+
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  return `${m}m ago`;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -49,9 +68,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Sidebar({ stats, scanner, markets }: SidebarProps) {
+export function Sidebar({ stats, scanner, markets, recentAnomalies = [], onRequestNotifications }: SidebarProps) {
   const maxType = stats ? Math.max(...Object.values(stats.byType), 1) : 1;
   const maxSev = stats ? Math.max(...Object.values(stats.bySeverity), 1) : 1;
+
+  const notifSupported = 'Notification' in window;
+  const notifGranted = notifSupported && Notification.permission === 'granted';
 
   return (
     <aside className="space-y-6 overflow-y-auto">
@@ -69,6 +91,48 @@ export function Sidebar({ stats, scanner, markets }: SidebarProps) {
           />
         </div>
       </div>
+
+      {/* Notifications */}
+      {notifSupported && !notifGranted && onRequestNotifications && (
+        <div className="rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/[0.07]">
+          <div className="mb-2.5 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-white/40" />
+            <p className="text-[13px] font-medium">Notifications</p>
+          </div>
+          <p className="mb-3 text-[12px] leading-relaxed text-white/40">
+            Get alerts for critical anomalies in real time.
+          </p>
+          <button
+            onClick={onRequestNotifications}
+            className="w-full rounded-xl bg-[#007AFF] py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
+          >
+            Enable Alerts
+          </button>
+        </div>
+      )}
+
+      {/* Hot Right Now */}
+      {recentAnomalies.length > 0 && (
+        <div>
+          <SectionLabel>Hot Right Now</SectionLabel>
+          <div className="space-y-1.5">
+            {recentAnomalies.slice(0, 3).map((a) => (
+              <div
+                key={a.id}
+                className="flex items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-white/[0.04] transition-colors"
+              >
+                <span className="mt-0.5 text-[14px] leading-none">{TYPE_ICONS[a.type] ?? '⚡'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] text-white/65" title={a.question}>
+                    {a.question}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-white/30">{timeAgo(a.detectedAt)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* By Type */}
       {stats && (

@@ -41,6 +41,16 @@ export interface MarketSnapshot {
   fetchedAt: number;
 }
 
+export interface PricePoint {
+  timestamp: number;
+  price: number;
+}
+
+export interface PriceHistory {
+  conditionId: string;
+  points: PricePoint[];
+}
+
 export interface AnomalyStats {
   total: number;
   last1h: number;

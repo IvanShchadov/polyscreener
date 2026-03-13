@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Anomaly } from '../types';
+import { TradeButton } from './TradeButton';
 
 const SEVERITY_COLORS: Record<string, string> = {
   CRITICAL: '#ff453a',
@@ -131,16 +132,19 @@ export function AnomalyCard({ anomaly }: { anomaly: Anomaly }) {
           ))}
         </div>
 
-        {/* Link */}
+        {/* Footer: link + trade button */}
         {anomaly.eventSlug && (
-          <a
-            href={`https://polymarket.com/event/${anomaly.eventSlug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[12px] font-medium text-[#0a84ff] transition-opacity hover:opacity-70"
-          >
-            View on Polymarket →
-          </a>
+          <div className="flex items-center justify-between">
+            <a
+              href={`https://polymarket.com/event/${anomaly.eventSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[12px] text-white/30 transition-opacity hover:text-white/60"
+            >
+              View →
+            </a>
+            <TradeButton eventSlug={anomaly.eventSlug} variant="secondary" />
+          </div>
         )}
       </div>
     </div>

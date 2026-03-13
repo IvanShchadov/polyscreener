@@ -1,11 +1,13 @@
+import { NavLink } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
+import { useBuilderCode } from '../contexts/BuilderCodeContext';
+import { buildPolymarketHomeUrl } from '../lib/polymarket';
 import type { AnomalyStats, ScannerStatus } from '../types';
 
 interface HeaderProps {
   stats: AnomalyStats | null;
   scanner: ScannerStatus | null;
   isConnected: boolean;
-  page?: 'feed' | 'portfolio';
-  onPageChange?: (p: 'feed' | 'portfolio') => void;
 }
 
 function formatUptime(ms: number): string {
@@ -15,7 +17,16 @@ function formatUptime(ms: number): string {
   return `${mins}m`;
 }
 
-export function Header({ stats, scanner, isConnected, page, onPageChange }: HeaderProps) {
+const NAV_LINKS = [
+  { to: '/',          label: 'Feed',      end: true  },
+  { to: '/markets',   label: 'Markets',   end: false },
+  { to: '/arb',       label: 'Arb',       end: false },
+  { to: '/portfolio', label: 'Portfolio', end: false },
+];
+
+export function Header({ stats, scanner, isConnected }: HeaderProps) {
+  const builderCode = useBuilderCode();
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#111113]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-3.5">
@@ -32,29 +43,40 @@ export function Header({ stats, scanner, isConnected, page, onPageChange }: Head
             />
           </div>
 
-          {/* Segment control */}
-          <nav className="hidden sm:flex items-center rounded-lg bg-white/[0.06] p-0.5">
-            {(['feed', 'portfolio'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => onPageChange?.(p)}
-                className={`rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-all ${
-                  page === p
-                    ? 'bg-white/[0.12] text-white shadow-sm'
-                    : 'text-white/50 hover:text-white/80'
-                }`}
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 sm:flex">
+            {NAV_LINKS.map(({ to, label, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                    isActive ? 'bg-white/[0.10] text-white' : 'text-white/45 hover:text-white/75'
+                  }`
+                }
               >
-                {p === 'feed' ? 'Feed' : 'Portfolio'}
-              </button>
+                {label}
+              </NavLink>
             ))}
           </nav>
         </div>
 
-        {/* Right: stats pills */}
+        {/* Right: stats + trade CTA */}
         <div className="hidden items-center gap-5 sm:flex">
           <StatPill label="Markets" value={scanner?.marketsTracked ?? 0} />
-          <StatPill label="Anomalies 1h" value={stats?.last1h ?? 0} />
+          <StatPill label="1h" value={stats?.last1h ?? 0} />
           <StatPill label="Uptime" value={scanner ? formatUptime(scanner.uptime) : '—'} />
+
+          <a
+            href={buildPolymarketHomeUrl(builderCode)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-xl bg-[#007AFF] px-3.5 py-2 text-[13px] font-semibold text-white transition-all hover:opacity-85 hover:scale-[1.02]"
+          >
+            Trade
+            <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+          </a>
         </div>
       </div>
     </header>
@@ -64,8 +86,8 @@ export function Header({ stats, scanner, isConnected, page, onPageChange }: Head
 function StatPill({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-center gap-2 text-[13px]">
-      <span className="text-white/40">{label}</span>
-      <span className="font-mono font-medium text-white/70">{value}</span>
+      <span className="text-white/35">{label}</span>
+      <span className="font-mono font-medium text-white/60">{value}</span>
     </div>
   );
 }

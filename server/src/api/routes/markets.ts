@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import { getTrackedMarkets, getTrackedMarket } from '../../services/anomaly.js';
+import { getTrackedMarkets, getTrackedMarket, getPriceHistory, getAnomalies } from '../../services/anomaly.js';
 import { getScannerStatus } from '../../services/scanner.js';
 
 const router = Router();
@@ -34,6 +34,22 @@ router.get('/markets', (req: Request, res: Response) => {
 
 router.get('/markets/scanner/status', (_req: Request, res: Response) => {
   res.json(getScannerStatus());
+});
+
+router.get('/markets/:conditionId/prices', (req: Request, res: Response) => {
+  const conditionId = req.params.conditionId as string;
+  const history = getPriceHistory(conditionId);
+  if (!history) {
+    res.json({ conditionId, points: [] });
+    return;
+  }
+  res.json(history);
+});
+
+router.get('/markets/:conditionId/anomalies', (req: Request, res: Response) => {
+  const conditionId = req.params.conditionId as string;
+  const all = getAnomalies({ limit: 200 });
+  res.json(all.filter((a) => a.conditionId === conditionId));
 });
 
 router.get('/markets/:conditionId', (req: Request, res: Response) => {

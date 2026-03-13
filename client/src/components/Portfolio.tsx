@@ -243,8 +243,23 @@ function parseAddresses(raw: string): string[] {
   return raw.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
-export function Portfolio() {
-  const { address, setAddress, data, loading, error, load } = usePortfolio();
+interface PortfolioProps {
+  address?: string;
+  setAddress?: (v: string) => void;
+  data?: ReturnType<typeof usePortfolio>['data'];
+  loading?: boolean;
+  error?: string | null;
+  load?: (addrs: string[]) => void;
+}
+
+export function Portfolio(externalProps: PortfolioProps = {}) {
+  const internal = usePortfolio();
+  const address = externalProps.address ?? internal.address;
+  const setAddress = externalProps.setAddress ?? internal.setAddress;
+  const data = externalProps.data !== undefined ? externalProps.data : internal.data;
+  const loading = externalProps.loading ?? internal.loading;
+  const error = externalProps.error !== undefined ? externalProps.error : internal.error;
+  const load = externalProps.load ?? internal.load;
 
   const addresses = parseAddresses(address);
   const hasInput = addresses.length > 0;
