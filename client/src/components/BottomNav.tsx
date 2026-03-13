@@ -4,7 +4,7 @@ import { BarChart2, Layers, GitCompare, Wallet } from 'lucide-react';
 const NAV = [
   { to: '/',          label: 'Feed',      Icon: BarChart2  },
   { to: '/markets',   label: 'Markets',   Icon: Layers     },
-  { to: '/arb',       label: 'Arb',       Icon: GitCompare },
+  { to: '/arb',       label: 'Arbitrage', Icon: GitCompare },
   { to: '/portfolio', label: 'Portfolio', Icon: Wallet     },
 ];
 

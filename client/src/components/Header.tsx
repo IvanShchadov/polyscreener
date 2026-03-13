@@ -20,7 +20,7 @@ function formatUptime(ms: number): string {
 const NAV_LINKS = [
   { to: '/',          label: 'Feed',      end: true  },
   { to: '/markets',   label: 'Markets',   end: false },
-  { to: '/arb',       label: 'Arb',       end: false },
+  { to: '/arb',       label: 'Arbitrage', end: false },
   { to: '/portfolio', label: 'Portfolio', end: false },
 ];
 
