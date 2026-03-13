@@ -74,17 +74,17 @@ export interface SSEMessage {
 export interface GammaMarket {
   id: string;
   question: string;
-  condition_id: string;
+  conditionId: string;
   slug: string;
   volume: string;
-  volume_num: number;
+  volumeNum: number;
   liquidity: string;
-  liquidity_num: number;
-  outcome_prices: string | string[];
-  clob_token_ids: string | string[];
+  liquidityNum: number;
+  outcomePrices: string | string[];
+  clobTokenIds: string | string[];
   spread: number;
-  best_bid: number;
-  best_ask: number;
+  bestBid: number;
+  bestAsk: number;
   tags: { label: string }[] | string[];
   active: boolean;
   closed: boolean;

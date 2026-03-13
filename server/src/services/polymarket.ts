@@ -16,13 +16,13 @@ function parseJsonArray(raw: unknown): string[] {
 function parseOutcomePrices(raw: unknown): [number, number] {
   if (!raw) return [0, 0];
   try {
-    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const arr = Array.isArray(raw) ? raw : JSON.parse(String(raw));
     if (Array.isArray(arr) && arr.length >= 2) {
       return [parseFloat(arr[0]) || 0, parseFloat(arr[1]) || 0];
     }
     if (Array.isArray(arr) && arr.length === 1) {
       const yes = parseFloat(arr[0]) || 0;
-      return [yes, yes > 0 ? 1 - yes : 0];
+      return [yes, yes > 0 ? Math.round((1 - yes) * 100) / 100 : 0];
     }
     return [0, 0];
   } catch {
@@ -31,22 +31,22 @@ function parseOutcomePrices(raw: unknown): [number, number] {
 }
 
 function toSnapshot(m: GammaMarket): MarketSnapshot {
-  const [yes, no] = parseOutcomePrices(m.outcome_prices);
+  const [yes, no] = parseOutcomePrices(m.outcomePrices);
   return {
-    conditionId: m.condition_id,
+    conditionId: m.conditionId,
     question: m.question,
     slug: m.slug,
-    volume: m.volume_num ?? (parseFloat(m.volume) || 0),
-    liquidity: m.liquidity_num ?? (parseFloat(m.liquidity) || 0),
+    volume: m.volumeNum ?? (parseFloat(m.volume) || 0),
+    liquidity: m.liquidityNum ?? (parseFloat(m.liquidity) || 0),
     outcomeYes: yes,
     outcomeNo: no,
     spread: m.spread ?? 0,
-    bestBid: m.best_bid ?? 0,
-    bestAsk: m.best_ask ?? 0,
+    bestBid: m.bestBid ?? 0,
+    bestAsk: m.bestAsk ?? 0,
     tags: (m.tags || []).map((t) => (typeof t === 'string' ? t : t.label)),
     active: m.active,
     closed: m.closed,
-    clobTokenIds: parseJsonArray(m.clob_token_ids),
+    clobTokenIds: parseJsonArray(m.clobTokenIds),
     fetchedAt: Date.now(),
   };
 }
