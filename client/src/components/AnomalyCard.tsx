@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import type { Anomaly } from '../types';
 import { TradeButton } from './TradeButton';
 
-const SEVERITY_COLORS: Record<string, string> = {
+const SEVERITY_DOT_COLORS: Record<string, string> = {
   CRITICAL: '#ff453a',
   HIGH:     '#ff9f0a',
   MEDIUM:   '#ffd60a',
-  LOW:      '#5ac8fa',
+  LOW:      '#30d158',
 };
 
-const TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  PRICE_SPIKE:        { label: 'Price Spike',   color: '#ff453a' },
-  VOLUME_SURGE:       { label: 'Volume Surge',  color: '#bf5af2' },
-  SPREAD_ANOMALY:     { label: 'Spread',        color: '#ff9f0a' },
-  WHALE_TRADE:        { label: 'Whale',         color: '#5ac8fa' },
-  CROSS_PLATFORM_ARB: { label: 'Arb',           color: '#30d158' },
-  NEW_MARKET_HOT:     { label: 'New Hot',       color: '#ffd60a' },
+const TYPE_LABELS: Record<string, string> = {
+  PRICE_SPIKE:        'Price Spike',
+  VOLUME_SURGE:       'Volume Surge',
+  SPREAD_ANOMALY:     'Spread',
+  WHALE_TRADE:        'Whale',
+  CROSS_PLATFORM_ARB: 'Arb',
+  NEW_MARKET_HOT:     'New Hot',
 };
 
 function timeAgo(ts: number): string {
@@ -36,12 +36,6 @@ function formatCompact(n: number): string {
 
 function MetaValue({ k, v }: { k: string; v: string | number }) {
   const isPrice = k === 'currentPrice' || k === 'prevPrice' || k === 'polyPrice' || k === 'extPrice' || k === 'diffCents';
-  const isPriceUp = k === 'direction' && v === 'up';
-  const isPriceDown = k === 'direction' && v === 'down';
-
-  let color = 'rgba(255,255,255,0.55)';
-  if (isPriceUp) color = '#30d158';
-  if (isPriceDown) color = '#ff453a';
 
   const labels: Record<string, string> = {
     prevPrice:     'From',
@@ -74,7 +68,7 @@ function MetaValue({ k, v }: { k: string; v: string | number }) {
   return (
     <span className="flex items-center gap-1">
       <span className="text-[11px] text-white/30">{display}</span>
-      <span className="font-mono text-[11px]" style={{ color }}>{val}</span>
+      <span className="text-[11px] text-white/60">{val}</span>
     </span>
   );
 }
@@ -86,30 +80,22 @@ export function AnomalyCard({ anomaly }: { anomaly: Anomaly }) {
     return () => clearInterval(id);
   }, []);
 
-  const sevColor = SEVERITY_COLORS[anomaly.severity] || 'rgba(255,255,255,0.3)';
-  const typeInfo = TYPE_LABELS[anomaly.type] || { label: anomaly.type, color: 'rgba(255,255,255,0.5)' };
+  const dotColor = SEVERITY_DOT_COLORS[anomaly.severity] || 'rgba(255,255,255,0.3)';
+  const typeLabel = TYPE_LABELS[anomaly.type] || anomaly.type;
 
   return (
-    <div className="animate-slideIn relative overflow-hidden rounded-xl bg-white/[0.04] ring-1 ring-white/[0.07] transition-all duration-200 hover:bg-white/[0.06] hover:ring-white/[0.12]">
-      {/* Severity accent bar */}
-      <div
-        className="absolute left-0 top-0 h-full w-[3px]"
-        style={{ backgroundColor: sevColor, opacity: 0.65 }}
-      />
-
-      <div className="py-3.5 pr-4 pl-5">
+    <div className="animate-slideIn rounded-2xl bg-white/[0.05] shadow-sm transition-all duration-200 hover:bg-white/[0.07]">
+      <div className="px-5 py-4">
         {/* Top row */}
-        <div className="mb-2.5 flex items-center gap-1.5">
+        <div className="mb-2.5 flex items-center gap-2">
           <span
-            className="rounded-md px-2 py-0.5 text-[11px] font-medium"
-            style={{ backgroundColor: typeInfo.color + '18', color: typeInfo.color }}
-          >
-            {typeInfo.label}
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: dotColor }}
+          />
+          <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-[11px] font-medium text-white/55">
+            {typeLabel}
           </span>
-          <span
-            className="rounded-md px-2 py-0.5 text-[11px] font-medium"
-            style={{ backgroundColor: sevColor + '14', color: sevColor }}
-          >
+          <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-[11px] font-medium text-white/55">
             {anomaly.severity.charAt(0) + anomaly.severity.slice(1).toLowerCase()}
           </span>
           <span className="ml-auto text-[11px] text-white/30">
@@ -132,7 +118,7 @@ export function AnomalyCard({ anomaly }: { anomaly: Anomaly }) {
           ))}
         </div>
 
-        {/* Footer: link + trade button */}
+        {/* Footer */}
         {anomaly.eventSlug && (
           <div className="flex items-center justify-between">
             <a
