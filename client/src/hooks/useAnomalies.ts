@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Anomaly, SSEMessage, AnomalyType } from '../types';
+import type { Anomaly, SSEMessage } from '../types';
 
-export function useAnomalies(filterType?: AnomalyType | null) {
+export function useAnomalies() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
@@ -56,9 +56,5 @@ export function useAnomalies(filterType?: AnomalyType | null) {
     };
   }, [connect]);
 
-  const filtered = filterType
-    ? anomalies.filter((a) => a.type === filterType)
-    : anomalies;
-
-  return { anomalies: filtered, allAnomalies: anomalies, isConnected };
+  return { anomalies, isConnected };
 }

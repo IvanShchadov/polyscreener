@@ -4,7 +4,6 @@ import { AnomalyCard } from './AnomalyCard';
 
 interface AnomalyFeedProps {
   anomalies: Anomaly[];
-  allAnomalies: Anomaly[];
 }
 
 const FILTERS: { label: string; value: AnomalyType | null }[] = [
@@ -12,15 +11,16 @@ const FILTERS: { label: string; value: AnomalyType | null }[] = [
   { label: 'Price', value: 'PRICE_SPIKE' },
   { label: 'Volume', value: 'VOLUME_SURGE' },
   { label: 'Whales', value: 'WHALE_TRADE' },
-  { label: 'Arb', value: 'CROSS_PLATFORM_ARB' },
   { label: 'Spread', value: 'SPREAD_ANOMALY' },
+  { label: 'New Hot', value: 'NEW_MARKET_HOT' },
+  { label: 'Arb', value: 'CROSS_PLATFORM_ARB' },
 ];
 
-export function AnomalyFeed({ anomalies, allAnomalies }: AnomalyFeedProps) {
+export function AnomalyFeed({ anomalies }: AnomalyFeedProps) {
   const [filter, setFilter] = useState<AnomalyType | null>(null);
 
   const displayed = filter
-    ? allAnomalies.filter((a) => a.type === filter)
+    ? anomalies.filter((a) => a.type === filter)
     : anomalies;
 
   return (

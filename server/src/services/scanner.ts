@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { fetchTopMarketSnapshots } from './polymarket.js';
-import { detectAnomalies, getAnomalies } from './anomaly.js';
+import { detectAnomalies, getAnomalies, pruneStaleMarkets } from './anomaly.js';
 import { updateSubscriptions, startWebSocket, setWhaleCallback } from './websocket.js';
 import type { Anomaly, ScannerStatus } from '../types/index.js';
 
@@ -33,6 +33,10 @@ async function runScan(): Promise<void> {
 
     const newAnomalies = detectAnomalies(snapshots);
     lastScan = Date.now();
+
+    // Prune stale market data for markets no longer in top N
+    const activeIds = new Set(snapshots.map((s) => s.conditionId));
+    pruneStaleMarkets(activeIds);
 
     // Update WS subscriptions for top 100 by volume
     const top100 = snapshots

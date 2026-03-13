@@ -6,7 +6,7 @@ import { useStats } from './hooks/useStats';
 import { useMarkets } from './hooks/useMarkets';
 
 export default function App() {
-  const { anomalies, allAnomalies, isConnected } = useAnomalies();
+  const { anomalies, isConnected } = useAnomalies();
   const { stats, scanner } = useStats();
   const { markets } = useMarkets();
 
@@ -15,7 +15,7 @@ export default function App() {
       <Header stats={stats} scanner={scanner} isConnected={isConnected} />
 
       <main className="mx-auto max-w-[1600px] gap-6 p-6 lg:grid lg:grid-cols-[1fr_380px]">
-        <AnomalyFeed anomalies={anomalies} allAnomalies={allAnomalies} />
+        <AnomalyFeed anomalies={anomalies} />
         <Sidebar stats={stats} scanner={scanner} markets={markets} />
       </main>
     </div>

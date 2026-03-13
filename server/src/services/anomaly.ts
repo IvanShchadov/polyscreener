@@ -255,9 +255,20 @@ function pruneExpired(): void {
   for (const [id, a] of anomalies) {
     if (a.expiresAt < now) anomalies.delete(id);
   }
-  // Prune dedup keys older than window
   for (const [key, ts] of dedupKeys) {
     if (now - ts > DEDUP_WINDOW_MS) dedupKeys.delete(key);
+  }
+}
+
+export function pruneStaleMarkets(activeConditionIds: Set<string>): void {
+  for (const id of priceHistories.keys()) {
+    if (!activeConditionIds.has(id)) priceHistories.delete(id);
+  }
+  for (const id of volumeAverages.keys()) {
+    if (!activeConditionIds.has(id)) volumeAverages.delete(id);
+  }
+  for (const id of prevSnapshots.keys()) {
+    if (!activeConditionIds.has(id)) prevSnapshots.delete(id);
   }
 }
 
