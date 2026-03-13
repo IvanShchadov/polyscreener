@@ -32,10 +32,12 @@ function parseOutcomePrices(raw: unknown): [number, number] {
 
 function toSnapshot(m: GammaMarket): MarketSnapshot {
   const [yes, no] = parseOutcomePrices(m.outcomePrices);
+  const eventSlug = m.events?.[0]?.slug ?? m.slug;
   return {
     conditionId: m.conditionId,
     question: m.question,
     slug: m.slug,
+    eventSlug,
     volume: m.volumeNum ?? (parseFloat(m.volume) || 0),
     liquidity: m.liquidityNum ?? (parseFloat(m.liquidity) || 0),
     outcomeYes: yes,

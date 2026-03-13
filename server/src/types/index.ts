@@ -11,7 +11,8 @@ export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export interface MarketSnapshot {
   conditionId: string;
   question: string;
-  slug: string;
+  slug: string;        // market slug (from API)
+  eventSlug: string;   // event slug (for polymarket.com/event/{eventSlug})
   volume: number;
   liquidity: number;
   outcomeYes: number;
@@ -33,6 +34,7 @@ export interface Anomaly {
   conditionId: string;
   question: string;
   slug: string;
+  eventSlug: string;
   description: string;
   metadata: Record<string, string | number>;
   detectedAt: number;
@@ -89,6 +91,7 @@ export interface GammaMarket {
   active: boolean;
   closed: boolean;
   archived: boolean;
+  events?: { slug: string }[];
 }
 
 export interface CLOBTrade {

@@ -49,6 +49,7 @@ function createAnomaly(
     conditionId: snapshot.conditionId,
     question: snapshot.question,
     slug: snapshot.slug,
+    eventSlug: snapshot.eventSlug,
     description,
     metadata,
     detectedAt: now,

@@ -115,7 +115,7 @@ export function AnomalyCard({ anomaly }: { anomaly: Anomaly }) {
 
       {/* Link */}
       <a
-        href={`https://polymarket.com/event/${anomaly.slug}`}
+        href={`https://polymarket.com/event/${anomaly.eventSlug}`}
         target="_blank"
         rel="noopener noreferrer"
         className="text-xs text-[#6c5ce7] hover:text-[#a29bfe] transition-colors"

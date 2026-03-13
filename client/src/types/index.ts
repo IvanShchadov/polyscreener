@@ -15,6 +15,7 @@ export interface Anomaly {
   conditionId: string;
   question: string;
   slug: string;
+  eventSlug: string;
   description: string;
   metadata: Record<string, string | number>;
   detectedAt: number;
@@ -25,6 +26,7 @@ export interface MarketSnapshot {
   conditionId: string;
   question: string;
   slug: string;
+  eventSlug: string;
   volume: number;
   liquidity: number;
   outcomeYes: number;

@@ -22,7 +22,7 @@ export function TopMarkets({ markets }: { markets: MarketSnapshot[] }) {
             return (
               <a
                 key={m.conditionId}
-                href={`https://polymarket.com/event/${m.slug}`}
+                href={`https://polymarket.com/event/${m.eventSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[#1a1d28]"
