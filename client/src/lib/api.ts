@@ -1,4 +1,4 @@
-import type { Anomaly, AnomalyStats, MarketSnapshot, ScannerStatus, AnomalyType, Severity } from '../types';
+import type { Anomaly, AnomalyStats, MarketSnapshot, ScannerStatus, AnomalyType, Severity, PortfolioData } from '../types';
 
 const BASE = '/api';
 
@@ -44,4 +44,8 @@ export function fetchMarkets(params?: {
 
 export function fetchScannerStatus(): Promise<ScannerStatus> {
   return get('/markets/scanner/status');
+}
+
+export function fetchPortfolio(address: string): Promise<PortfolioData> {
+  return get(`/portfolio/${address}`);
 }

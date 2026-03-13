@@ -11,7 +11,7 @@ export function useMarkets() {
     async function poll() {
       try {
         const data = await fetchMarkets({ limit: 10, sort: 'volume' });
-        if (active) setMarkets(data.markets);
+        if (active && data.markets) setMarkets(data.markets);
       } catch {
         // ignore
       }

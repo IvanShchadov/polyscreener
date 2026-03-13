@@ -4,6 +4,8 @@ interface HeaderProps {
   stats: AnomalyStats | null;
   scanner: ScannerStatus | null;
   isConnected: boolean;
+  page?: 'feed' | 'portfolio';
+  onPageChange?: (p: 'feed' | 'portfolio') => void;
 }
 
 function formatUptime(ms: number): string {
@@ -13,7 +15,7 @@ function formatUptime(ms: number): string {
   return `${mins}m`;
 }
 
-export function Header({ stats, scanner, isConnected }: HeaderProps) {
+export function Header({ stats, scanner, isConnected, page, onPageChange }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0b0f]/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-3">
@@ -31,6 +33,20 @@ export function Header({ stats, scanner, isConnected }: HeaderProps) {
           <span className="text-xs text-[#6b7394]">
             {isConnected ? 'LIVE' : 'OFFLINE'}
           </span>
+
+          <nav className="hidden items-center gap-1 sm:flex ml-4">
+            {(['feed', 'portfolio'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => onPageChange?.(p)}
+                className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                  page === p ? 'bg-[#6c5ce7] text-white' : 'text-[#6b7394] hover:text-[#b0b8cf]'
+                }`}
+              >
+                {p === 'feed' ? 'Feed' : 'Portfolio'}
+              </button>
+            ))}
+          </nav>
         </div>
 
         <div className="hidden items-center gap-6 sm:flex">

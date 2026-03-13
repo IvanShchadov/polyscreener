@@ -61,3 +61,47 @@ export interface SSEMessage {
   type: 'init' | 'update';
   anomalies: Anomaly[];
 }
+
+export interface PortfolioPosition {
+  conditionId: string;
+  question: string;
+  outcome: string;
+  size: number;
+  avgPrice: number;
+  currentPrice: number;
+  currentValue: number;
+  invested: number;
+  pnl: number;
+  pnlPct: number;
+  eventSlug: string;
+}
+
+export interface TradeActivity {
+  id: string;
+  timestamp: number;
+  question: string;
+  outcome: string;
+  side: string;
+  price: number;
+  size: number;
+  value: number;
+  transactionHash: string;
+  eventSlug: string;
+}
+
+export interface PortfolioSummary {
+  totalInvested: number;
+  totalCurrentValue: number;
+  totalPnl: number;
+  totalPnlPct: number;
+  openPositions: number;
+  totalShares: number;
+  potentialWinnings: number;
+}
+
+export interface PortfolioData {
+  address: string;
+  positions: PortfolioPosition[];
+  activity: TradeActivity[];
+  summary: PortfolioSummary;
+}

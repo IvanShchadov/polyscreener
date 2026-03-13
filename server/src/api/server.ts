@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { logger } from '../utils/logger.js';
 import anomalyRoutes from './routes/anomalies.js';
 import marketRoutes from './routes/markets.js';
+import portfolioRoutes from './routes/portfolio.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +16,7 @@ export function createApp(): express.Application {
   // API routes
   app.use('/api', anomalyRoutes);
   app.use('/api', marketRoutes);
+  app.use('/api', portfolioRoutes);
 
   // Health check
   app.get('/api/health', (_req, res) => {

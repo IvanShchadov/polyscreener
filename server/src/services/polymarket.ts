@@ -100,7 +100,8 @@ export async function fetchMidpoint(tokenId: string): Promise<number | null> {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    return parseFloat(data.mid) || null;
+    const mid = parseFloat(data.mid);
+    return isNaN(mid) ? null : mid;
   } catch {
     return null;
   }

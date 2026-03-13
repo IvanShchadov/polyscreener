@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { Anomaly } from '../types';
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -27,7 +28,7 @@ function timeAgo(ts: number): string {
 }
 
 function MetaValue({ k, v }: { k: string; v: string | number }) {
-  const isPrice = k === 'currentPrice' || k === 'prevPrice';
+  const isPrice = k === 'currentPrice' || k === 'prevPrice' || k === 'polyPrice' || k === 'extPrice' || k === 'diffCents';
   const isPriceUp = k === 'direction' && v === 'up';
   const isPriceDown = k === 'direction' && v === 'down';
 
@@ -50,6 +51,10 @@ function MetaValue({ k, v }: { k: string; v: string | number }) {
     price: 'Price',
     side: 'Side',
     liquidity: 'Liq',
+    polyPrice: 'Poly',
+    extPrice: 'Ext',
+    diffCents: 'Gap',
+    platform: 'Platform',
   };
 
   const display = labels[k] || k;
@@ -70,6 +75,12 @@ function formatCompact(n: number): string {
 }
 
 export function AnomalyCard({ anomaly }: { anomaly: Anomaly }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
   const sevColor = SEVERITY_COLORS[anomaly.severity] || '#6b7394';
   const typeInfo = TYPE_LABELS[anomaly.type] || { label: anomaly.type, color: '#6b7394' };
 

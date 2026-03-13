@@ -12,4 +12,6 @@ export const config = {
   whaleTradeMinSize: parseFloat(process.env.WHALE_TRADE_MIN_SIZE || '5000'),
   maxMarketsToTrack: parseInt(process.env.MAX_MARKETS_TO_TRACK || '500', 10),
   builderCode: process.env.POLYMARKET_BUILDER_CODE || '',
+  arbDiffThreshold: parseFloat(process.env.ARB_DIFF_THRESHOLD || '0.07'),
+  kalshiApiUrl: process.env.KALSHI_API_URL || 'https://api.elections.kalshi.com/trade-api/v2',
 };

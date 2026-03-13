@@ -10,6 +10,8 @@ import type {
   PriceHistory,
   AnomalyStats,
 } from '../types/index.js';
+import type { ExternalMarket } from './crossPlatform.js';
+import { findBestArb } from './crossPlatform.js';
 
 const ANOMALY_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
@@ -18,7 +20,7 @@ const MAX_PRICE_POINTS = 200;
 // In-memory stores
 const anomalies = new Map<string, Anomaly>();
 const priceHistories = new Map<string, PricePoint[]>();
-const volumeAverages = new Map<string, { sum: number; count: number }>();
+const volumeAverages = new Map<string, { sum: number; count: number; prevVolume: number }>();
 const prevSnapshots = new Map<string, MarketSnapshot>();
 const dedupKeys = new Map<string, number>(); // key → timestamp
 
@@ -101,21 +103,24 @@ function detectVolumeSurge(snapshot: MarketSnapshot): Anomaly | null {
   const avg = volumeAverages.get(snapshot.conditionId);
   if (!avg || avg.count < 3) return null;
 
-  const mean = avg.sum / avg.count;
-  if (mean === 0) return null;
-  if (snapshot.volume <= mean * config.volumeSpikeMultiplier) return null;
+  const delta = snapshot.volume - avg.prevVolume;
+  if (delta <= 0) return null;
+
+  const meanDelta = avg.sum / avg.count;
+  if (meanDelta === 0) return null;
+  if (delta <= meanDelta * config.volumeSpikeMultiplier) return null;
   if (isDuplicate('VOLUME_SURGE', snapshot.conditionId)) return null;
 
-  const ratio = (snapshot.volume / mean).toFixed(1);
+  const ratio = (delta / meanDelta).toFixed(1);
 
   return createAnomaly(
     'VOLUME_SURGE',
     'MEDIUM',
     snapshot,
-    `Volume is ${ratio}x above average ($${formatNum(snapshot.volume)} vs avg $${formatNum(mean)})`,
+    `Volume surge: +$${formatNum(delta)} this scan (${ratio}x above avg +$${formatNum(meanDelta)})`,
     {
-      volume: Math.round(snapshot.volume),
-      avgVolume: Math.round(mean),
+      volume: Math.round(delta),
+      avgVolume: Math.round(meanDelta),
       multiplier: parseFloat(ratio),
     },
   );
@@ -231,6 +236,44 @@ export function addWhaleAnomaly(
   return anomaly;
 }
 
+export function detectCrossPlatformArbs(
+  snapshots: MarketSnapshot[],
+  externalMarkets: ExternalMarket[],
+): Anomaly[] {
+  if (externalMarkets.length === 0) return [];
+  const found: Anomaly[] = [];
+
+  for (const snap of snapshots) {
+    const arb = findBestArb(snap.question, snap.outcomeYes, externalMarkets, config.arbDiffThreshold);
+    if (!arb) continue;
+    if (isDuplicate('CROSS_PLATFORM_ARB', snap.conditionId)) continue;
+
+    const diff = arb.diff;
+    const severity: Severity = diff >= 0.15 ? 'HIGH' : diff >= 0.10 ? 'MEDIUM' : 'LOW';
+    const polyPct = (snap.outcomeYes * 100).toFixed(0);
+    const extPct = (arb.yesPrice * 100).toFixed(0);
+    const direction = snap.outcomeYes > arb.yesPrice ? 'higher' : 'lower';
+
+    const anomaly = createAnomaly(
+      'CROSS_PLATFORM_ARB',
+      severity,
+      snap,
+      `Poly ${polyPct}¢ vs ${arb.platform} ${extPct}¢ — Poly is ${direction} by ${(diff * 100).toFixed(0)}¢`,
+      {
+        polyPrice: Math.round(snap.outcomeYes * 100),
+        extPrice: Math.round(arb.yesPrice * 100),
+        diffCents: Math.round(diff * 100),
+        platform: arb.platform,
+      },
+    );
+
+    anomalies.set(anomaly.id, anomaly);
+    found.push(anomaly);
+  }
+
+  return found;
+}
+
 function updatePriceHistory(snap: MarketSnapshot): void {
   let points = priceHistories.get(snap.conditionId);
   if (!points) {
@@ -244,9 +287,17 @@ function updatePriceHistory(snap: MarketSnapshot): void {
 }
 
 function updateVolumeAverage(snap: MarketSnapshot): void {
-  const avg = volumeAverages.get(snap.conditionId) || { sum: 0, count: 0 };
-  avg.sum += snap.volume;
-  avg.count += 1;
+  const avg = volumeAverages.get(snap.conditionId);
+  if (!avg) {
+    volumeAverages.set(snap.conditionId, { sum: 0, count: 0, prevVolume: snap.volume });
+    return;
+  }
+  const delta = snap.volume - avg.prevVolume;
+  if (delta > 0) {
+    avg.sum += delta;
+    avg.count += 1;
+  }
+  avg.prevVolume = snap.volume;
   volumeAverages.set(snap.conditionId, avg);
 }
 

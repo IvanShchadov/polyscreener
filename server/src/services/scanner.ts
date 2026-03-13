@@ -1,7 +1,8 @@
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { fetchTopMarketSnapshots } from './polymarket.js';
-import { detectAnomalies, getAnomalies, pruneStaleMarkets } from './anomaly.js';
+import { detectAnomalies, detectCrossPlatformArbs, getAnomalies, pruneStaleMarkets } from './anomaly.js';
+import { getExternalMarkets } from './crossPlatform.js';
 import { updateSubscriptions, startWebSocket, setWhaleCallback } from './websocket.js';
 import type { Anomaly, ScannerStatus } from '../types/index.js';
 
@@ -21,7 +22,11 @@ export function registerSSEClient(cb: (anomalies: Anomaly[]) => void): () => voi
 
 function broadcastAnomalies(newAnomalies: Anomaly[]): void {
   for (const cb of sseClients) {
-    cb(newAnomalies);
+    try {
+      cb(newAnomalies);
+    } catch (err) {
+      logger.warn({ err }, 'SSE client callback error');
+    }
   }
 }
 
@@ -45,12 +50,22 @@ async function runScan(): Promise<void> {
       .map((s) => ({ conditionId: s.conditionId, clobTokenIds: s.clobTokenIds }));
     updateSubscriptions(top100);
 
-    if (newAnomalies.length > 0) {
-      broadcastAnomalies(newAnomalies);
+    // Cross-platform arbitrage detection
+    const externalMarkets = await getExternalMarkets();
+    const arbAnomalies = detectCrossPlatformArbs(snapshots, externalMarkets);
+
+    const allNew = [...newAnomalies, ...arbAnomalies];
+    if (allNew.length > 0) {
+      broadcastAnomalies(allNew);
     }
 
     logger.info(
-      { markets: marketsTracked, anomalies: newAnomalies.length },
+      {
+        markets: marketsTracked,
+        anomalies: newAnomalies.length,
+        arbAnomalies: arbAnomalies.length,
+        kalshiMarkets: externalMarkets.length,
+      },
       'Scan complete',
     );
   } catch (err) {
