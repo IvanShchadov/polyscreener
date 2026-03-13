@@ -14,6 +14,7 @@ const FILTERS: { label: string; value: AnomalyType | null }[] = [
   { label: 'Whales',  value: 'WHALE_TRADE' },
   { label: 'Spread',  value: 'SPREAD_ANOMALY' },
   { label: 'New Hot', value: 'NEW_MARKET_HOT' },
+  { label: 'Arbitrage', value: 'CROSS_PLATFORM_ARB' },
 ];
 
 export function AnomalyFeed({ anomalies, isConnected }: AnomalyFeedProps) {

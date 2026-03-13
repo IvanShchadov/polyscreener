@@ -17,7 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   VOLUME_SURGE:       'Volume Surge',
   SPREAD_ANOMALY:     'Spread',
   WHALE_TRADE:        'Whale Trade',
-  CROSS_PLATFORM_ARB: 'Arb',
+  CROSS_PLATFORM_ARB: 'Arbitrage',
   NEW_MARKET_HOT:     'New Hot',
 };
 
