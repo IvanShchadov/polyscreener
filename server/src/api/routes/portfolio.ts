@@ -154,9 +154,9 @@ router.get('/portfolio/:address', async (req: Request, res: Response) => {
     ),
   ]);
 
-  const positions: PortfolioPosition[] = rawPositions.map((p) =>
-    normalizePosition(p as Record<string, unknown>),
-  );
+  const positions: PortfolioPosition[] = rawPositions
+    .map((p) => normalizePosition(p as Record<string, unknown>))
+    .filter((p) => p.currentPrice > 0); // exclude resolved markets
 
   const activity: TradeActivity[] = rawActivity.map((a) =>
     normalizeTrade(a as Record<string, unknown>),

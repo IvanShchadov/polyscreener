@@ -6,14 +6,9 @@ interface StatCardProps {
 
 export function StatCard({ label, value, color }: StatCardProps) {
   return (
-    <div className="rounded-lg border border-white/5 bg-[#12141c] p-3">
-      <p className="mb-1 text-[11px] text-[#6b7394] uppercase tracking-wider">
-        {label}
-      </p>
-      <p
-        className="font-mono text-lg font-bold"
-        style={{ color: color || '#f1f3f9' }}
-      >
+    <div className="rounded-xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/[0.07]">
+      <p className="mb-1.5 text-[11px] font-medium text-white/40">{label}</p>
+      <p className="font-mono text-[18px] font-semibold leading-none" style={{ color: color || 'white' }}>
         {value}
       </p>
     </div>

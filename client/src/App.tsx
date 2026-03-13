@@ -14,7 +14,7 @@ export default function App() {
   const [page, setPage] = useState<'feed' | 'portfolio'>('feed');
 
   return (
-    <div className="min-h-screen bg-[#0a0b0f] text-[#f1f3f9]">
+    <div className="min-h-screen bg-[#111113] text-white">
       <Header
         stats={stats}
         scanner={scanner}
@@ -26,7 +26,7 @@ export default function App() {
       <main className="mx-auto max-w-[1600px] p-6">
         {page === 'feed' ? (
           <div className="gap-6 lg:grid lg:grid-cols-[1fr_380px]">
-            <AnomalyFeed anomalies={anomalies} />
+            <AnomalyFeed anomalies={anomalies} isConnected={isConnected} />
             <Sidebar stats={stats} scanner={scanner} markets={markets} />
           </div>
         ) : (

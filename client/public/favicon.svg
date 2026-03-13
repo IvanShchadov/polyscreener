@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background: dark rounded square -->
+  <rect width="32" height="32" rx="7" fill="#111113"/>
+
+  <!-- Pulse waveform: flat line with anomaly spike -->
+  <!-- Subtle glow layer -->
+  <polyline
+    points="2,16 10,16 12,6 14,26 16,16 30,16"
+    fill="none"
+    stroke="#0a84ff"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.25"
+  />
+  <!-- Main line -->
+  <polyline
+    points="2,16 10,16 12,6 14,26 16,16 30,16"
+    fill="none"
+    stroke="#0a84ff"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

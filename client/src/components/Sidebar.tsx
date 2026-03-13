@@ -10,28 +10,28 @@ interface SidebarProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  PRICE_SPIKE: '#ff5252',
-  VOLUME_SURGE: '#6c5ce7',
-  SPREAD_ANOMALY: '#ffab40',
-  WHALE_TRADE: '#40c4ff',
-  CROSS_PLATFORM_ARB: '#00e676',
-  NEW_MARKET_HOT: '#ffd740',
+  PRICE_SPIKE:        '#ff453a',
+  VOLUME_SURGE:       '#bf5af2',
+  SPREAD_ANOMALY:     '#ff9f0a',
+  WHALE_TRADE:        '#5ac8fa',
+  CROSS_PLATFORM_ARB: '#30d158',
+  NEW_MARKET_HOT:     '#ffd60a',
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  PRICE_SPIKE: 'Price Spike',
-  VOLUME_SURGE: 'Volume Surge',
-  SPREAD_ANOMALY: 'Spread',
-  WHALE_TRADE: 'Whale Trade',
+  PRICE_SPIKE:        'Price Spike',
+  VOLUME_SURGE:       'Volume Surge',
+  SPREAD_ANOMALY:     'Spread',
+  WHALE_TRADE:        'Whale Trade',
   CROSS_PLATFORM_ARB: 'Arb',
-  NEW_MARKET_HOT: 'New Hot',
+  NEW_MARKET_HOT:     'New Hot',
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
-  CRITICAL: '#ff5252',
-  HIGH: '#ffab40',
-  MEDIUM: '#ffd740',
-  LOW: '#40c4ff',
+  CRITICAL: '#ff453a',
+  HIGH:     '#ff9f0a',
+  MEDIUM:   '#ffd60a',
+  LOW:      '#5ac8fa',
 };
 
 function formatUptime(ms: number): string {
@@ -41,41 +41,31 @@ function formatUptime(ms: number): string {
   return `${mins}m`;
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-white/25">
+      {children}
+    </p>
+  );
+}
+
 export function Sidebar({ stats, scanner, markets }: SidebarProps) {
-  const maxType = stats
-    ? Math.max(...Object.values(stats.byType), 1)
-    : 1;
-  const maxSev = stats
-    ? Math.max(...Object.values(stats.bySeverity), 1)
-    : 1;
+  const maxType = stats ? Math.max(...Object.values(stats.byType), 1) : 1;
+  const maxSev = stats ? Math.max(...Object.values(stats.bySeverity), 1) : 1;
 
   return (
     <aside className="space-y-6 overflow-y-auto">
       {/* Overview */}
       <div>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b7394]">
-          Overview
-        </h3>
+        <SectionLabel>Overview</SectionLabel>
         <div className="grid grid-cols-2 gap-2">
-          <StatCard
-            label="Active"
-            value={stats?.total ?? 0}
-            color="#6c5ce7"
-          />
-          <StatCard
-            label="Last 24h"
-            value={stats?.last24h ?? 0}
-            color="#ffab40"
-          />
-          <StatCard
-            label="Markets"
-            value={scanner?.marketsTracked ?? 0}
-            color="#40c4ff"
-          />
+          <StatCard label="Active" value={stats?.total ?? 0} color="#bf5af2" />
+          <StatCard label="Last 24h" value={stats?.last24h ?? 0} color="#ff9f0a" />
+          <StatCard label="Markets" value={scanner?.marketsTracked ?? 0} color="#5ac8fa" />
           <StatCard
             label="Scanner"
             value={scanner?.isRunning ? 'Active' : 'Stopped'}
-            color={scanner?.isRunning ? '#00e676' : '#ff5252'}
+            color={scanner?.isRunning ? '#30d158' : '#ff453a'}
           />
         </div>
       </div>
@@ -83,17 +73,15 @@ export function Sidebar({ stats, scanner, markets }: SidebarProps) {
       {/* By Type */}
       {stats && (
         <div>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b7394]">
-            By Type
-          </h3>
-          <div className="space-y-2">
+          <SectionLabel>By Type</SectionLabel>
+          <div className="space-y-2.5">
             {Object.entries(stats.byType).map(([type, count]) => (
               <DistroBar
                 key={type}
                 label={TYPE_LABELS[type] || type}
                 value={count}
                 max={maxType}
-                color={TYPE_COLORS[type] || '#6b7394'}
+                color={TYPE_COLORS[type] || 'rgba(255,255,255,0.3)'}
               />
             ))}
           </div>
@@ -103,10 +91,8 @@ export function Sidebar({ stats, scanner, markets }: SidebarProps) {
       {/* By Severity */}
       {stats && (
         <div>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b7394]">
-            By Severity
-          </h3>
-          <div className="space-y-2">
+          <SectionLabel>By Severity</SectionLabel>
+          <div className="space-y-2.5">
             {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map((sev) => (
               <DistroBar
                 key={sev}
@@ -125,11 +111,9 @@ export function Sidebar({ stats, scanner, markets }: SidebarProps) {
 
       {/* Uptime */}
       {scanner && (
-        <div className="rounded-lg border border-white/5 bg-[#12141c] p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-[#6b7394]">
-            Uptime
-          </p>
-          <p className="font-mono text-sm font-bold text-[#b0b8cf]">
+        <div className="rounded-xl bg-white/[0.04] px-4 py-3 text-center ring-1 ring-white/[0.07]">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/25">Uptime</p>
+          <p className="mt-1.5 font-mono text-[15px] font-semibold text-white/60">
             {formatUptime(scanner.uptime)}
           </p>
         </div>
