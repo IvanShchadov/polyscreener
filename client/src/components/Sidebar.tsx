@@ -93,21 +93,29 @@ export function Sidebar({ stats, scanner, markets, recentAnomalies = [], notifPe
       </div>
 
       {/* Notifications */}
-      {notifSupported && !notifGranted && onRequestNotifications && (
+      {notifSupported && !notifGranted && (
         <div className="rounded-xl bg-white/[0.05] p-4">
           <div className="mb-2 flex items-center gap-2">
             <Bell className="h-4 w-4 text-white/40" />
             <p className="text-[13px] font-medium text-white/80">Notifications</p>
           </div>
-          <p className="mb-3 text-[12px] leading-relaxed text-white/40">
-            Get alerts for critical anomalies in real time.
-          </p>
-          <button
-            onClick={onRequestNotifications}
-            className="w-full rounded-xl border border-white/20 py-2 text-[13px] font-medium text-white/60 transition-all hover:border-[#007AFF] hover:text-[#007AFF]"
-          >
-            Enable Alerts
-          </button>
+          {notifPermission === 'denied' ? (
+            <p className="text-[12px] leading-relaxed text-white/35">
+              Notifications blocked. Enable them in your browser settings to receive alerts.
+            </p>
+          ) : (
+            <>
+              <p className="mb-3 text-[12px] leading-relaxed text-white/40">
+                Get alerts for critical anomalies in real time.
+              </p>
+              <button
+                onClick={onRequestNotifications}
+                className="w-full rounded-xl border border-white/20 py-2 text-[13px] font-medium text-white/60 transition-all hover:border-[#007AFF] hover:text-[#007AFF]"
+              >
+                Enable Alerts
+              </button>
+            </>
+          )}
         </div>
       )}
 
