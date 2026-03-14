@@ -49,7 +49,7 @@ function normalizePosition(raw: Record<string, any>): PortfolioPosition {
   const avgPrice = Number(raw.avgPrice ?? raw.avgCost ?? 0);
   const currentValue = Number(raw.currentValue ?? 0);
   const currentPrice =
-    Number(raw.pricePerShare ?? raw.currentPrice ?? 0) ||
+    Number(raw.curPrice ?? raw.pricePerShare ?? raw.currentPrice ?? 0) ||
     (size > 0 ? currentValue / size : 0);
   const invested = size * avgPrice;
   const pnl =
@@ -155,8 +155,9 @@ router.get('/portfolio/:address', async (req: Request, res: Response) => {
   ]);
 
   const positions: PortfolioPosition[] = rawPositions
+    .filter((p) => !p['redeemable']) // exclude resolved/settled markets
     .map((p) => normalizePosition(p as Record<string, unknown>))
-    .filter((p) => p.currentPrice > 0); // exclude resolved markets
+    .filter((p) => p.size > 0);
 
   const activity: TradeActivity[] = rawActivity.map((a) =>
     normalizeTrade(a as Record<string, unknown>),

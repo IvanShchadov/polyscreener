@@ -53,8 +53,8 @@ export function ArbitragePage() {
   useEffect(() => {
     refresh();
     intervalRef.current = setInterval(refresh, 30_000);
-    // Tick every 5s to update the "Updated X ago" label
-    const tickId = setInterval(() => setTick((t) => t + 1), 5_000);
+    // Tick every 1s to update the "Updated X ago" label
+    const tickId = setInterval(() => setTick((t) => t + 1), 1_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       clearInterval(tickId);

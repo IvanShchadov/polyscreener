@@ -13,15 +13,33 @@ let cachedMarkets: ExternalMarket[] = [];
 let lastFetchAt = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// Stopwords to ignore when matching questions
+// Stopwords: common English function words only.
+// Keep domain-specific words (election, presidential, republican, etc.) because
+// they distinguish WHAT questions are about — removing them causes false positives.
 const STOPWORDS = new Set([
   'will', 'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
   'have', 'has', 'had', 'do', 'does', 'did', 'would', 'could', 'should',
   'may', 'might', 'can', 'in', 'on', 'at', 'to', 'for', 'of', 'by',
   'with', 'from', 'or', 'and', 'but', 'if', 'then', 'that', 'this',
   'it', 'its', 'as', 'up', 'than', 'get', 'win', 'before', 'after',
-  'any', 'all', 'not', 'no', 'vs', 'who',
+  'any', 'all', 'not', 'no', 'vs', 'who', 'next', 'new', 'first',
+  'its', 'their', 'they', 'how', 'when', 'what', 'which', 'more',
 ]);
+
+// Synonyms: applied BEFORE the length filter so short tokens like "uk" (2 chars)
+// get expanded to "united" before being filtered out.
+const SYNONYMS: Record<string, string> = {
+  buy: 'acquire', purchase: 'acquire',
+  us: 'united', usa: 'united', uk: 'united', u: 'united', britain: 'united',
+  btc: 'bitcoin', eth: 'ethereum',
+  gop: 'republican',
+  dem: 'democrat', democratic: 'democrat',
+  presidency: 'president', presidential: 'president',
+  elect: 'election', elected: 'election',
+  invade: 'invasion', invaded: 'invasion',
+  ceasefire: 'peace',
+  fed: 'federal',
+};
 
 function tokenize(text: string): Set<string> {
   return new Set(
@@ -29,20 +47,60 @@ function tokenize(text: string): Set<string> {
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
+      .map((w) => SYNONYMS[w] ?? w)           // synonyms BEFORE length filter
       .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
   );
 }
 
-// Overlap coefficient — better than Jaccard for questions of different lengths
+// Words that make a Title-Case phrase a generic concept, NOT a person/team name.
+// "Presidential Election", "Champions League", "Nobel Prize" are generic;
+// "Elon Musk", "Donald Trump", "Real Madrid" are specific entities.
+const GENERIC_NOUN_WORDS = new Set([
+  'election', 'presidential', 'president', 'general', 'league', 'cup',
+  'championship', 'nomination', 'prize', 'award', 'congress', 'senate',
+  'administration', 'government', 'court', 'minister', 'secretary',
+  'finals', 'series', 'tournament', 'open', 'party', 'house', 'reserve',
+]);
+
+// Extract person/team names from ORIGINAL cased text (skips first word which
+// is always capitalized as the start of a sentence, and skips generic phrases).
+function extractProperNouns(text: string): Set<string> {
+  const result = new Set<string>();
+  // Skip the first word (it's always uppercase as sentence start)
+  const afterFirstWord = text.replace(/^\S+\s+/, '');
+  const matches = afterFirstWord.matchAll(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g);
+  for (const m of matches) {
+    const noun = m[1].toLowerCase();
+    // Skip if any word in the phrase is a generic concept
+    if (noun.split(' ').some((w) => GENERIC_NOUN_WORDS.has(w))) continue;
+    result.add(noun);
+  }
+  return result;
+}
+
+// Symmetric overlap — both sides must share sufficient tokens.
+// min(scoreA, scoreB) prevents short Kalshi titles from false-matching long Poly questions.
 export function questionSimilarity(a: string, b: string): number {
   const ta = tokenize(a);
   const tb = tokenize(b);
   if (ta.size === 0 || tb.size === 0) return 0;
+  // Require at least 3 meaningful tokens on both sides (blocks 1-2 word titles)
+  if (ta.size < 3 || tb.size < 3) return 0;
+
+  // If both questions name specific entities (people/teams), they must share at least one.
+  // "Elon Musk" vs "Donald Trump" → namesA ∩ namesB = ∅ → score 0.
+  const namesA = extractProperNouns(a);
+  const namesB = extractProperNouns(b);
+  if (namesA.size > 0 && namesB.size > 0) {
+    const hasCommon = [...namesA].some((n) => namesB.has(n));
+    if (!hasCommon) return 0;
+  }
+
   let overlap = 0;
   for (const w of ta) {
     if (tb.has(w)) overlap++;
   }
-  return overlap / Math.min(ta.size, tb.size);
+  return Math.min(overlap / ta.size, overlap / tb.size);
 }
 
 // ─── Kalshi ──────────────────────────────────────────────────────────────────
@@ -59,11 +117,6 @@ interface KalshiMarket {
   yes_ask_dollars?: string;
   last_price?: number;
   last_price_dollars?: string;
-}
-
-interface KalshiResponse {
-  markets: KalshiMarket[];
-  cursor?: string;
 }
 
 function parseKalshiPrice(m: KalshiMarket): number {
@@ -83,56 +136,41 @@ function parseKalshiPrice(m: KalshiMarket): number {
 
 async function fetchKalshiMarkets(): Promise<ExternalMarket[]> {
   const results: ExternalMarket[] = [];
-  let cursor: string | undefined;
-  const batchLimit = 1000;
 
   try {
-    do {
-      const url = new URL(`${config.kalshiApiUrl}/markets`);
-      url.searchParams.set('status', 'open');
-      url.searchParams.set('limit', String(batchLimit));
-      if (cursor) url.searchParams.set('cursor', cursor);
+    // Use /events?with_nested_markets=true — /markets endpoint returns 0.0000 prices
+    const url = new URL(`${config.kalshiApiUrl}/events`);
+    url.searchParams.set('with_nested_markets', 'true');
+    url.searchParams.set('limit', '200');
 
-      const res = await fetch(url.toString(), {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; PolyScreener/1.0)',
-        },
-        signal: AbortSignal.timeout(15_000),
-      });
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; PolyScreener/1.0)',
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
 
-      if (!res.ok) {
-        logger.warn({ status: res.status }, 'Kalshi API non-OK');
-        break;
-      }
+    if (!res.ok) {
+      logger.warn({ status: res.status }, 'Kalshi API non-OK');
+      return results;
+    }
 
-      const raw: unknown = await res.json();
-      // Handle both { markets: [...] } and { data: [...] } and bare array
-      const markets: KalshiMarket[] = Array.isArray(raw)
-        ? (raw as KalshiMarket[])
-        : ((raw as Record<string, unknown>).markets as KalshiMarket[] | undefined) ??
-          ((raw as Record<string, unknown>).data as KalshiMarket[] | undefined) ??
-          [];
-      const data: KalshiResponse = {
-        markets,
-        cursor: (raw as Record<string, unknown>).cursor as string | undefined,
-      };
-      logger.debug({ count: markets.length, firstItem: markets[0] }, 'Kalshi raw response sample');
-      for (const m of data.markets) {
+    const raw = await res.json() as Record<string, unknown>;
+    const events = (raw.events as { event_ticker?: string; markets?: KalshiMarket[] }[]) ?? [];
+
+    for (const event of events) {
+      for (const m of (event.markets ?? [])) {
         const yesPrice = parseKalshiPrice(m);
         if (yesPrice <= 0 || yesPrice >= 1) continue; // skip settled/invalid
         results.push({
           platform: 'Kalshi',
           question: m.title,
           yesPrice,
-          url: `https://kalshi.com/markets/${m.event_ticker.toLowerCase()}/${m.ticker.toLowerCase()}`,
+          url: `https://kalshi.com/markets/${(m.event_ticker ?? event.event_ticker ?? '').toLowerCase()}/${m.ticker.toLowerCase()}`,
         });
       }
-
-      cursor = data.cursor || undefined;
-      // Only fetch one page to avoid rate limiting
-      break;
-    } while (cursor);
+    }
 
     logger.info({ count: results.length }, 'Fetched Kalshi markets');
   } catch (err) {
@@ -169,7 +207,7 @@ export function findBestArb(
 
   for (const ext of externals) {
     const score = questionSimilarity(polyQuestion, ext.question);
-    if (score < 0.5) continue;
+    if (score < 0.55) continue;
 
     const diff = Math.abs(polyPrice - ext.yesPrice);
     if (diff < minDiff) continue;

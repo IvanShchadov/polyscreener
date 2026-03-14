@@ -78,20 +78,33 @@ export interface GammaMarket {
   question: string;
   conditionId: string;
   slug: string;
-  volume: string;
+  volume: string | number;
   volumeNum: number;
-  liquidity: string;
+  liquidity: string | number;
   liquidityNum: number;
   outcomePrices: string | string[];
   clobTokenIds: string | string[];
   spread: number;
   bestBid: number;
   bestAsk: number;
+  category?: string;
   tags: { label: string }[] | string[];
   active: boolean;
   closed: boolean;
-  archived: boolean;
+  archived?: boolean;
   events?: { slug: string }[];
+}
+
+export interface GammaEvent {
+  id: string;
+  slug: string;
+  title: string;
+  volume: number;
+  liquidity: number;
+  active: boolean;
+  closed: boolean;
+  tags?: { id: string; label: string; slug: string }[];
+  markets?: GammaMarket[];
 }
 
 export interface CLOBTrade {

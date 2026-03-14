@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
-import type { MarketSnapshot, GammaMarket } from '../types/index.js';
+import type { MarketSnapshot, GammaMarket, GammaEvent } from '../types/index.js';
 
 function parseJsonArray(raw: unknown): string[] {
   if (!raw) return [];
@@ -30,22 +30,21 @@ function parseOutcomePrices(raw: unknown): [number, number] {
   }
 }
 
-function toSnapshot(m: GammaMarket): MarketSnapshot {
+function toSnapshot(m: GammaMarket, tags: string[], eventSlug: string): MarketSnapshot {
   const [yes, no] = parseOutcomePrices(m.outcomePrices);
-  const eventSlug = m.events?.[0]?.slug ?? m.slug;
   return {
     conditionId: m.conditionId,
     question: m.question,
     slug: m.slug,
     eventSlug,
-    volume: m.volumeNum ?? (parseFloat(m.volume) || 0),
-    liquidity: m.liquidityNum ?? (parseFloat(m.liquidity) || 0),
+    volume: m.volumeNum ?? (typeof m.volume === 'number' ? m.volume : parseFloat(m.volume) || 0),
+    liquidity: m.liquidityNum ?? (typeof m.liquidity === 'number' ? m.liquidity : parseFloat(m.liquidity) || 0),
     outcomeYes: yes,
     outcomeNo: no,
     spread: m.spread ?? 0,
     bestBid: m.bestBid ?? 0,
     bestAsk: m.bestAsk ?? 0,
-    tags: (m.tags || []).map((t) => (typeof t === 'string' ? t : t.label)),
+    tags,
     active: m.active,
     closed: m.closed,
     clobTokenIds: parseJsonArray(m.clobTokenIds),
@@ -56,18 +55,18 @@ function toSnapshot(m: GammaMarket): MarketSnapshot {
 export async function fetchTopMarketSnapshots(
   n: number,
 ): Promise<MarketSnapshot[]> {
-  const snapshots: MarketSnapshot[] = [];
-  const batchSize = 100;
+  const allSnapshots: MarketSnapshot[] = [];
+  const batchSize = 50;
+  let offset = 0;
 
-  for (let offset = 0; offset < n; offset += batchSize) {
-    const limit = Math.min(batchSize, n - offset);
-    const url = new URL('/markets', config.gammaApiUrl);
+  // Use Events API — it includes proper tags (slugs) and markets with clobTokenIds
+  while (allSnapshots.length < n * 2) {
+    const url = new URL('/events', config.gammaApiUrl);
     url.searchParams.set('active', 'true');
     url.searchParams.set('closed', 'false');
-    url.searchParams.set('archived', 'false');
     url.searchParams.set('order', 'volume');
     url.searchParams.set('ascending', 'false');
-    url.searchParams.set('limit', String(limit));
+    url.searchParams.set('limit', String(batchSize));
     url.searchParams.set('offset', String(offset));
 
     try {
@@ -76,20 +75,45 @@ export async function fetchTopMarketSnapshots(
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) {
-        logger.warn({ status: res.status, offset }, 'Gamma API non-OK');
+        logger.warn({ status: res.status, offset }, 'Gamma Events API non-OK');
         break;
       }
-      const markets: GammaMarket[] = await res.json();
-      if (markets.length === 0) break;
-      snapshots.push(...markets.map(toSnapshot));
+      const events: GammaEvent[] = await res.json();
+      if (events.length === 0) break;
+
+      for (const event of events) {
+        const tags = (event.tags ?? []).map((t) => t.slug);
+        const slug = event.slug;
+
+        for (const market of (event.markets ?? [])) {
+          if (!market.active || market.closed) continue;
+          if (!market.conditionId) continue;
+          allSnapshots.push(toSnapshot(market, tags, slug));
+        }
+      }
+
+      offset += batchSize;
+      // Stop when we've fetched enough events
+      if (offset >= 300) break;
     } catch (err) {
-      logger.error({ err, offset }, 'Gamma API fetch failed');
+      logger.error({ err, offset }, 'Gamma Events API fetch failed');
       break;
     }
   }
 
-  logger.info({ count: snapshots.length }, 'Fetched market snapshots');
-  return snapshots;
+  // Sort by volume desc, dedupe by conditionId, take top n
+  const seen = new Set<string>();
+  const deduped = allSnapshots
+    .sort((a, b) => b.volume - a.volume)
+    .filter((s) => {
+      if (seen.has(s.conditionId)) return false;
+      seen.add(s.conditionId);
+      return true;
+    });
+
+  const result = deduped.slice(0, n);
+  logger.info({ count: result.length, eventsScanned: offset }, 'Fetched market snapshots via Events API');
+  return result;
 }
 
 export async function fetchMidpoint(tokenId: string): Promise<number | null> {

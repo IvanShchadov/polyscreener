@@ -5,7 +5,20 @@ import { fetchMarkets } from '../lib/api';
 import { TradeButton } from '../components/TradeButton';
 import type { MarketSnapshot } from '../types';
 
-const TAGS = ['All', 'Politics', 'Crypto', 'Sports', 'Finance', 'Science', 'Technology', 'Entertainment'];
+const TAGS: { label: string; value: string | null }[] = [
+  { label: 'All',         value: null },
+  { label: 'Politics',    value: 'politics' },
+  { label: 'Elections',   value: 'elections' },
+  { label: 'Crypto',      value: 'crypto' },
+  { label: 'Sports',      value: 'sports' },
+  { label: 'Finance',     value: 'finance' },
+  { label: 'Tech',        value: 'tech' },
+  { label: 'Science',     value: 'science' },
+  { label: 'Business',    value: 'business' },
+  { label: 'Geopolitics', value: 'geopolitics' },
+  { label: 'Culture',     value: 'culture' },
+  { label: 'Economy',     value: 'economy' },
+];
 const PAGE_SIZE = 50;
 
 type SortKey = 'volume' | 'liquidity' | 'price' | 'spread';
@@ -27,7 +40,7 @@ function formatVolume(n: number) {
 export function MarketsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [tag, setTag] = useState('All');
+  const [tag, setTag] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>('volume');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [markets, setMarkets] = useState<MarketSnapshot[]>([]);
@@ -42,7 +55,7 @@ export function MarketsPage() {
     try {
       const res = await fetchMarkets({
         q: query || undefined,
-        tag: tag !== 'All' ? tag.toLowerCase() : undefined,
+        tag: tag ?? undefined,
         sort: sort === 'volume' || sort === 'liquidity' ? sort : 'volume',
         limit: PAGE_SIZE,
         offset: currentOffset,
@@ -76,6 +89,14 @@ export function MarketsPage() {
     load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, tag, sort, sortDir]);
+
+  // Auto-retry while scanner is warming up
+  useEffect(() => {
+    if (total === 0 && !loading) {
+      const t = setTimeout(() => load(true), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [total, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleSort(col: SortKey) {
     if (sort === col) {
@@ -114,15 +135,15 @@ export function MarketsPage() {
       <div className="flex flex-wrap gap-2">
         {TAGS.map((t) => (
           <button
-            key={t}
-            onClick={() => setTag(t)}
+            key={t.label}
+            onClick={() => setTag(t.value)}
             className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all ${
-              tag === t
+              tag === t.value
                 ? 'bg-[#007AFF] text-white'
                 : 'bg-white/[0.05] text-white/50 hover:text-white/80 ring-1 ring-white/[0.06]'
             }`}
           >
-            {t}
+            {t.label}
           </button>
         ))}
       </div>
@@ -148,9 +169,9 @@ export function MarketsPage() {
         {markets.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-[13px] text-white/35">
-              {query ? `No markets matching "${query}"` : 'No markets loaded yet'}
+              {query ? `No markets matching "${query}"` : tag ? 'No markets in this category yet' : 'Scanner is warming up...'}
             </p>
-            <p className="mt-1 text-[12px] text-white/20">Scanner is warming up...</p>
+            {!query && !tag && <p className="mt-1 text-[12px] text-white/20">Retrying automatically...</p>}
           </div>
         ) : (
           <div>
