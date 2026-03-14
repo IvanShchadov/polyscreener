@@ -119,19 +119,17 @@ interface KalshiMarket {
 }
 
 function parseKalshiPrice(m: KalshiMarket): number {
-  // Use mid-price (bid+ask)/2 for accurate comparison with Polymarket's last-traded price.
-  // All _dollars fields are already 0–1 floats (e.g. "0.0900" = 9¢ = 0.09).
-  const bid = m.yes_bid_dollars != null ? parseFloat(m.yes_bid_dollars) : NaN;
-  const ask = m.yes_ask_dollars != null ? parseFloat(m.yes_ask_dollars) : NaN;
-  if (!isNaN(bid) && !isNaN(ask) && ask > 0) {
-    const mid = (bid + ask) / 2;
-    return mid > 1 ? mid / 100 : mid; // guard against unexpected cent format
-  }
-  // Fall back to last traded price
-  if (m.last_price_dollars != null) {
-    const v = parseFloat(m.last_price_dollars);
-    if (!isNaN(v) && v > 0) return v > 1 ? v / 100 : v;
-  }
+  // All _dollars fields are 0–1 floats (e.g. "0.0900" = 9¢ = 0.09).
+  const bid = parseFloat(m.yes_bid_dollars ?? '0');
+  const ask = parseFloat(m.yes_ask_dollars ?? '0');
+  // Use mid-price only when BOTH bid and ask are valid (> 0)
+  if (bid > 0 && ask > 0) return (bid + ask) / 2;
+  // Fall back to last traded price when bid/ask are missing or '0.0000'
+  const last = parseFloat(m.last_price_dollars ?? '0');
+  if (last > 0) return last;
+  // Use whichever side is available
+  if (ask > 0) return ask;
+  if (bid > 0) return bid;
   return 0;
 }
 

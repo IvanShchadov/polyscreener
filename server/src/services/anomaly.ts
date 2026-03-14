@@ -264,6 +264,8 @@ export function detectCrossPlatformArbs(
         extPrice: Math.round(arb.yesPrice * 100),
         diffCents: Math.round(diff * 100),
         platform: arb.platform,
+        kalshiUrl: arb.url,
+        kalshiQuestion: arb.question,
       },
     );
 
