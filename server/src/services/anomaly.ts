@@ -14,7 +14,7 @@ import type { ExternalMarket } from './crossPlatform.js';
 import { findBestArb } from './crossPlatform.js';
 
 const ANOMALY_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
-const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const DEDUP_WINDOW_MS = ANOMALY_TTL_MS; // same as TTL — one entry per market per cycle
 const MAX_PRICE_POINTS = 200;
 
 // In-memory stores
