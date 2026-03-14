@@ -60,6 +60,8 @@ const GENERIC_NOUN_WORDS = new Set([
   'championship', 'nomination', 'prize', 'award', 'congress', 'senate',
   'administration', 'government', 'court', 'minister', 'secretary',
   'finals', 'series', 'tournament', 'open', 'party', 'house', 'reserve',
+  // US political party adjectives — not person names (UK parties like Labour/Reform kept as distinguishers)
+  'democratic', 'republican', 'democrat',
 ]);
 
 // Extract person/team names from ORIGINAL cased text (skips first word which
@@ -110,26 +112,25 @@ interface KalshiMarket {
   event_ticker: string;
   title: string;
   status: string;
-  // v2 API returns prices as integer cents (0–100) or string dollars ("0.56")
-  yes_bid?: number;
-  yes_ask?: number;
+  // v2 API returns prices as floats in 0–1 range (e.g. "0.0900" = 9¢)
   yes_bid_dollars?: string;
   yes_ask_dollars?: string;
-  last_price?: number;
   last_price_dollars?: string;
 }
 
 function parseKalshiPrice(m: KalshiMarket): number {
-  // Try string dollar format first: "0.56" → 0.56
-  for (const f of [m.yes_bid_dollars, m.last_price_dollars]) {
-    if (f != null) {
-      const v = parseFloat(f);
-      if (!isNaN(v)) return v > 1 ? v / 100 : v;
-    }
+  // Use mid-price (bid+ask)/2 for accurate comparison with Polymarket's last-traded price.
+  // All _dollars fields are already 0–1 floats (e.g. "0.0900" = 9¢ = 0.09).
+  const bid = m.yes_bid_dollars != null ? parseFloat(m.yes_bid_dollars) : NaN;
+  const ask = m.yes_ask_dollars != null ? parseFloat(m.yes_ask_dollars) : NaN;
+  if (!isNaN(bid) && !isNaN(ask) && ask > 0) {
+    const mid = (bid + ask) / 2;
+    return mid > 1 ? mid / 100 : mid; // guard against unexpected cent format
   }
-  // Fall back to integer cent format: 56 → 0.56
-  for (const f of [m.yes_bid, m.last_price]) {
-    if (f != null) return f > 1 ? f / 100 : f;
+  // Fall back to last traded price
+  if (m.last_price_dollars != null) {
+    const v = parseFloat(m.last_price_dollars);
+    if (!isNaN(v) && v > 0) return v > 1 ? v / 100 : v;
   }
   return 0;
 }
@@ -210,6 +211,20 @@ export function findBestArb(
     if (score < 0.55) continue;
 
     const diff = Math.abs(polyPrice - ext.yesPrice);
+
+    // Log every candidate match above threshold (before minDiff filter)
+    logger.info(
+      {
+        score: score.toFixed(2),
+        polyPrice: Math.round(polyPrice * 100),
+        kalshiPrice: Math.round(ext.yesPrice * 100),
+        diff: Math.round(diff * 100),
+        polyQuestion,
+        kalshiTitle: ext.question,
+      },
+      'ARB candidate',
+    );
+
     if (diff < minDiff) continue;
 
     if (!best || diff > best.diff) {
