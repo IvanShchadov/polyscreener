@@ -6,6 +6,7 @@ import anomalyRoutes from './routes/anomalies.js';
 import marketRoutes from './routes/markets.js';
 import portfolioRoutes from './routes/portfolio.js';
 import configRoutes from './routes/config.js';
+import arbitrageRoutes from './routes/arbitrage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,11 +15,12 @@ export function createApp(): express.Application {
 
   app.use(express.json());
 
-  // API routes
+  // API routes (must be before static/catch-all)
   app.use('/api', configRoutes);
   app.use('/api', anomalyRoutes);
   app.use('/api', marketRoutes);
   app.use('/api', portfolioRoutes);
+  app.use('/api', arbitrageRoutes);
 
   // Health check
   app.get('/api/health', (_req, res) => {

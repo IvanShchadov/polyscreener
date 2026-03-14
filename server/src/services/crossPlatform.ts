@@ -208,7 +208,7 @@ export function findBestArb(
 
   for (const ext of externals) {
     const score = questionSimilarity(polyQuestion, ext.question);
-    if (score < 0.55) continue;
+    if (score < 0.65) continue;
 
     const diff = Math.abs(polyPrice - ext.yesPrice);
 
